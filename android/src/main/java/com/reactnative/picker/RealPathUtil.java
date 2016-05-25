@@ -15,10 +15,32 @@ import android.provider.MediaStore;
 public class RealPathUtil {
 
     public static String getRealPathFromURI(Context context, Uri uri) {
-        if (Build.VERSION.SDK_INT < 19)
-            return RealPathUtil.getRealPathFromURI_API11to18(context, uri);
-        else
-            return RealPathUtil.getRealPathFromURI_API19(context, uri);
+        /*对两种URI获取Path做兼容*/
+        try {
+            /*临时用获取URI的id的方式,做兼容*/
+            long personid = ContentUris.parseId(uri);
+            return RealPathUtil.getRealPathFromURI_Common(context, uri);
+        } catch (NumberFormatException e) {
+            if (Build.VERSION.SDK_INT < 19)
+                return RealPathUtil.getRealPathFromURI_API11to18(context, uri);
+            else
+                return RealPathUtil.getRealPathFromURI_API19(context, uri);
+
+        }
+    }
+
+    public static String getRealPathFromURI_Common(Context context, Uri contentURI) {
+        String result;
+        Cursor cursor = context.getContentResolver().query(contentURI, null, null, null, null);
+        if (cursor == null) {
+            result = contentURI.getPath();
+        } else {
+            cursor.moveToFirst();
+            int idx = cursor.getColumnIndex(MediaStore.Images.ImageColumns.DATA);
+            result = cursor.getString(idx);
+            cursor.close();
+        }
+        return result;
     }
 
     @SuppressLint("NewApi")
